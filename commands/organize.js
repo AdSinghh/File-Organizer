@@ -1,130 +1,101 @@
 const fs = require("fs");
-
 const path = require("path");
 
-// Organize Function will organize all your target folder's files in a different folders acc to their extensions
+// Organize Function will organize all your target folder's files in different folders according to their extensions
 
-
+// An object to categorize file types by their extensions
 let types = {
     media: ["mp4", "mkv", "mp3"],
     archives: ["zip", "7z", "rar", "tar", "gz", "ar", "iso", "xz"],
     documents: [
-      "docx",
-      "doc",
-      "pdf",
-      "xlsx",
-      "xls",
-      "odt",
-      "ods",
-      "odp",
-      "odg",
-      "odf",
-      "txt",
-      "ps",
-      "tex",
+      "docx", "doc", "pdf", "xlsx", "xls", "odt", "ods", "odp", "odg", "odf", "txt", "ps", "tex",
     ],
     app: ["exe", "dmg", "pkg", "deb"],
-  };
-
-
+};
 
 function organizeFn(dirPath) {
-    // we need a directory path as parameter
+    // We need a directory path as a parameter
     let destPath;
+
     if (dirPath == undefined) {
       console.log("Please enter a valid Directory Path");
       return;
-    } // check whether directory path is passed or not and if not simply return
-  
+    } // Check whether a directory path is passed or not; if not, simply return
+
     let doesExist = fs.existsSync(dirPath);
-  
-    // this doesExist will tell the Target Folder exists or not
-  
+    // This checks whether the target folder exists or not
+
     if (doesExist == true) {
       destPath = path.join(dirPath, "organized_Files"); 
-  
-      // we created a path for organized_Files Folder
-  
-      // check whether in the given destPath does a folder exist with same name and if does not make a folder
+      // Create a path for the 'organized_Files' folder within the given directory
+
+      // Check whether a folder named 'organized_Files' exists at the destination path
       if (fs.existsSync(destPath) == false) {
-        fs.mkdirSync(destPath);
+        fs.mkdirSync(destPath); // If it doesn't exist, create the folder
       } else {
-        console.log("Folder Already Exists");
+        console.log("Folder Already Exists"); // If it already exists, log a message
       }
     } else {
       console.log("Please Enter A valid Path");
       return;
     }
-  organizeHelper(dirPath,destPath)
+    // Call the organizeHelper function to start organizing files
+    organizeHelper(dirPath, destPath);
 }
 
-function organizeHelper(src,dest){
-  let childNames = fs.readdirSync(src)
- // console.log(childNmaes)
+function organizeHelper(src, dest) {
+    // Read all the file/folder names within the source directory
+    let childNames = fs.readdirSync(src);
 
+    // Iterate over each file/folder in the source directory
+    for(let i = 0; i < childNames.length; i++) {
+        let childAddress = path.join(src, childNames[i]); // Get the full path of the file/folder
+        let isFile = fs.lstatSync(childAddress).isFile(); // Check if it's a file
 
-  for(let i=0 ; i < childNames.length; i++ )
-  {
-    let childAdress = path.join (src,childNames[i])
-    let isFile = fs.lstatSync(childAdress).isFile()
-
-    if(isFile == true)
-    {
-      let fileCategory = getCategory(childNames[i])
-
-      console.log(childNames[i] + " belongs to " + fileCategory)
-
-      sendFiles(childAdress , dest , fileCategory)
-
+        if(isFile == true) {
+            let fileCategory = getCategory(childNames[i]); // Determine the file's category based on its extension
+            console.log(childNames[i] + " belongs to " + fileCategory);
+            sendFiles(childAddress, dest, fileCategory); // Move the file to the appropriate category folder
+        }
     }
-  }
 }
 
-function getCategory(FileName){
-  let ext = path.extname(FileName).slice(1)
- 
- // console.log(ext)
-
- for (let key in types )
- {
-  let cTypeArr = types [key]
-   
- for (let i = 0; i < cTypeArr.length; i++)
- {
-  if (ext == cTypeArr[i])
-  {
-    return key
-  }
- } 
- }
- return "others"
+function getCategory(FileName) {
+    let ext = path.extname(FileName).slice(1); // Extract the file extension and remove the dot (.)
+    
+    // Iterate over the 'types' object to determine the file's category
+    for (let key in types) {
+        let cTypeArr = types[key];
+        for (let i = 0; i < cTypeArr.length; i++) {
+            if (ext == cTypeArr[i]) {
+                return key; // Return the category (e.g., 'media', 'documents') if a match is found
+            }
+        } 
+    }
+    return "others"; // If no match is found, categorize the file as 'others'
 }
 
- function sendFiles (srcFilePath , dest , fileCategory){
-    // we will create path for each category type encountered to create folders of their names
+function sendFiles(srcFilePath, dest, fileCategory) {
+    // Create a path for the category folder within the 'organized_Files' directory
+    let catPath = path.join(dest, fileCategory);
 
-  let catPath = path.join (dest , fileCategory)
+    // Check if the category folder exists; if not, create it
+    if (fs.existsSync(catPath) == false) {
+        fs.mkdirSync(catPath);
+    }
 
-    //D:\FJP4\test folder\organized_files\media
-   //D:\FJP4 \test folder\organized_files\documents
+    let fileName = path.basename(srcFilePath); // Get the file name from the full path
 
+    let destFilePath = path.join(catPath, fileName); // Create the destination file path within the category folder
 
-  if (fs.existsSync(catPath) == false)
-  {
-    fs.mkdirSync (catPath)
-  }
+    fs.copyFileSync(srcFilePath, destFilePath); // Copy the file from the source path to the destination path
 
-  let fileName = path.basename(srcFilePath)
+    fs.unlinkSync(srcFilePath); // Delete the original file from the source location
 
-  let destFilePath = path.join(catPath , fileName)
-
-  fs.copyFileSync(srcFilePath , destFilePath)
-
-  fs.unlinkSync (srcFilePath);
-
-  console.log ("File Organized")
+    console.log("File Organized"); // Log a message indicating the file has been organized
 }
 
+// Export the organizeFn function under the name 'organizeFnKey'
 module.exports = {
-   organizeFnKey : organizeFn
-}
+    organizeFnKey: organizeFn
+};
